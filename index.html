@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>grupo1</title>
+<style>
+  body { margin: 0; background: #111; color: #eee; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+  h1 { margin: 12px; }
+  canvas { background: #222; display: block; border: 2px solid #444; }
+</style>
+</head>
+<body>
+<h1>grupo1</h1>
+<canvas id="game" width="800" height="600"></canvas>
+<script>
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+
+  // --- game state goes here ---
+
+  function update(dt) {
+    // --- update logic ---
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#eee';
+    ctx.font = '24px sans-serif';
+    ctx.fillText('Tell Claude what the game does!', 180, 300);
+    // --- drawing goes here ---
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = (now - last) / 1000;
+    last = now;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+</script>
+</body>
+</html>
