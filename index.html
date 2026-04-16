@@ -1,44 +1,149 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>grupo1</title>
-<style>
-  body { margin: 0; background: #111; color: #eee; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
-  h1 { margin: 12px; }
-  canvas { background: #222; display: block; border: 2px solid #444; }
-</style>
+  <title>Mini Block Blast</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      background: #222;
+      color: white;
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(8, 40px);
+      grid-gap: 4px;
+      justify-content: center;
+      margin: 20px;
+    }
+    .cell {
+      width: 40px;
+      height: 40px;
+      background: #444;
+    }
+    .filled {
+      background: #4caf50;
+    }
+    button {
+      padding: 10px;
+      margin: 5px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-<h1>grupo1</h1>
-<canvas id="game" width="800" height="600"></canvas>
+
+<h1>Mini Block Blast</h1>
+<p>Click a block, then click the grid to place it</p>
+
+<div id="grid"></div>
+
+<div id="blocks"></div>
+
+<p>Score: <span id="score">0</span></p>
+
 <script>
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
+const gridSize = 8;
+let grid = Array(gridSize * gridSize).fill(0);
+let score = 0;
+let selectedBlock = null;
 
-  // --- game state goes here ---
+const shapes = [
+  [[1,1],[1,1]],        // square
+  [[1,1,1]],            // line
+  [[1],[1],[1]],        // vertical
+  [[1,1,0],[0,1,1]]     // zigzag
+];
 
-  function update(dt) {
-    // --- update logic ---
+function drawGrid() {
+  const gridEl = document.getElementById("grid");
+  gridEl.innerHTML = "";
+  grid.forEach((cell, i) => {
+    const div = document.createElement("div");
+    div.className = "cell" + (cell ? " filled" : "");
+    div.onclick = () => placeBlock(i);
+    gridEl.appendChild(div);
+  });
+}
+
+function drawBlocks() {
+  const container = document.getElementById("blocks");
+  container.innerHTML = "";
+  shapes.forEach((shape, index) => {
+    const btn = document.createElement("button");
+    btn.innerText = "Block " + (index+1);
+    btn.onclick = () => selectedBlock = shape;
+    container.appendChild(btn);
+  });
+}
+
+function placeBlock(index) {
+  if (!selectedBlock) return;
+
+  const x = index % gridSize;
+  const y = Math.floor(index / gridSize);
+
+  for (let dy = 0; dy < selectedBlock.length; dy++) {
+    for (let dx = 0; dx < selectedBlock[dy].length; dx++) {
+      if (selectedBlock[dy][dx]) {
+        let nx = x + dx;
+        let ny = y + dy;
+        if (nx >= gridSize || ny >= gridSize) return;
+        if (grid[ny * gridSize + nx]) return;
+      }
+    }
   }
 
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#eee';
-    ctx.font = '24px sans-serif';
-    ctx.fillText('Tell Claude what the game does!', 180, 300);
-    // --- drawing goes here ---
+  for (let dy = 0; dy < selectedBlock.length; dy++) {
+    for (let dx = 0; dx < selectedBlock[dy].length; dx++) {
+      if (selectedBlock[dy][dx]) {
+        let nx = x + dx;
+        let ny = y + dy;
+        grid[ny * gridSize + nx] = 1;
+      }
+    }
   }
 
-  let last = performance.now();
-  function loop(now) {
-    const dt = (now - last) / 1000;
-    last = now;
-    update(dt);
-    draw();
-    requestAnimationFrame(loop);
+  clearLines();
+  selectedBlock = null;
+  drawGrid();
+}
+
+function clearLines() {
+  // rows
+  for (let y = 0; y < gridSize; y++) {
+    let full = true;
+    for (let x = 0; x < gridSize; x++) {
+      if (!grid[y * gridSize + x]) full = false;
+    }
+    if (full) {
+      for (let x = 0; x < gridSize; x++) {
+        grid[y * gridSize + x] = 0;
+      }
+      score += 10;
+    }
   }
-  requestAnimationFrame(loop);
+
+  // columns
+  for (let x = 0; x < gridSize; x++) {
+    let full = true;
+    for (let y = 0; y < gridSize; y++) {
+      if (!grid[y * gridSize + x]) full = false;
+    }
+    if (full) {
+      for (let y = 0; y < gridSize; y++) {
+        grid[y * gridSize + x] = 0;
+      }
+      score += 10;
+    }
+  }
+
+  document.getElementById("score").innerText = score;
+}
+
+drawGrid();
+drawBlocks();
 </script>
+
 </body>
 </html>
