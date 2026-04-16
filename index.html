@@ -24,10 +24,23 @@
     .filled {
       background: #4caf50;
     }
+    .preview-good {
+      background: #2e7d32;
+      outline: 2px solid #a5d6a7;
+    }
+    .preview-bad {
+      background: #b71c1c;
+      outline: 2px solid #ef9a9a;
+    }
     button {
       padding: 10px;
       margin: 5px;
       cursor: pointer;
+    }
+    button.selected {
+      outline: 3px solid #ffeb3b;
+      background: #555;
+      color: white;
     }
   </style>
 </head>
@@ -47,6 +60,7 @@ const gridSize = 8;
 let grid = Array(gridSize * gridSize).fill(0);
 let score = 0;
 let selectedBlock = null;
+let selectedIndex = -1;
 
 const shapes = [
   [[1,1],[1,1]],        // square
@@ -55,6 +69,25 @@ const shapes = [
   [[1,1,0],[0,1,1]]     // zigzag
 ];
 
+function shapeCells(shape, x, y) {
+  const cells = [];
+  for (let dy = 0; dy < shape.length; dy++) {
+    for (let dx = 0; dx < shape[dy].length; dx++) {
+      if (shape[dy][dx]) cells.push({ x: x + dx, y: y + dy });
+    }
+  }
+  return cells;
+}
+
+function canPlaceAt(shape, x, y) {
+  const cells = shapeCells(shape, x, y);
+  for (const c of cells) {
+    if (c.x < 0 || c.x >= gridSize || c.y < 0 || c.y >= gridSize) return false;
+    if (grid[c.y * gridSize + c.x]) return false;
+  }
+  return true;
+}
+
 function drawGrid() {
   const gridEl = document.getElementById("grid");
   gridEl.innerHTML = "";
@@ -62,8 +95,32 @@ function drawGrid() {
     const div = document.createElement("div");
     div.className = "cell" + (cell ? " filled" : "");
     div.onclick = () => placeBlock(i);
+    div.onmouseenter = () => showPreview(i);
+    div.onmouseleave = clearPreview;
     gridEl.appendChild(div);
   });
+}
+
+function showPreview(index) {
+  if (!selectedBlock) return;
+  const x = index % gridSize;
+  const y = Math.floor(index / gridSize);
+  const ok = canPlaceAt(selectedBlock, x, y);
+  const cells = shapeCells(selectedBlock, x, y);
+  const gridEl = document.getElementById("grid");
+  const children = gridEl.children;
+  for (const c of cells) {
+    if (c.x < 0 || c.x >= gridSize || c.y < 0 || c.y >= gridSize) continue;
+    const cellEl = children[c.y * gridSize + c.x];
+    cellEl.classList.add(ok ? "preview-good" : "preview-bad");
+  }
+}
+
+function clearPreview() {
+  const gridEl = document.getElementById("grid");
+  for (const child of gridEl.children) {
+    child.classList.remove("preview-good", "preview-bad");
+  }
 }
 
 function drawBlocks() {
@@ -72,7 +129,12 @@ function drawBlocks() {
   shapes.forEach((shape, index) => {
     const btn = document.createElement("button");
     btn.innerText = "Block " + (index+1);
-    btn.onclick = () => selectedBlock = shape;
+    if (index === selectedIndex) btn.classList.add("selected");
+    btn.onclick = () => {
+      selectedBlock = shape;
+      selectedIndex = index;
+      drawBlocks();
+    };
     container.appendChild(btn);
   });
 }
@@ -83,30 +145,18 @@ function placeBlock(index) {
   const x = index % gridSize;
   const y = Math.floor(index / gridSize);
 
-  for (let dy = 0; dy < selectedBlock.length; dy++) {
-    for (let dx = 0; dx < selectedBlock[dy].length; dx++) {
-      if (selectedBlock[dy][dx]) {
-        let nx = x + dx;
-        let ny = y + dy;
-        if (nx >= gridSize || ny >= gridSize) return;
-        if (grid[ny * gridSize + nx]) return;
-      }
-    }
-  }
+  if (!canPlaceAt(selectedBlock, x, y)) return;
 
-  for (let dy = 0; dy < selectedBlock.length; dy++) {
-    for (let dx = 0; dx < selectedBlock[dy].length; dx++) {
-      if (selectedBlock[dy][dx]) {
-        let nx = x + dx;
-        let ny = y + dy;
-        grid[ny * gridSize + nx] = 1;
-      }
-    }
+  for (const c of shapeCells(selectedBlock, x, y)) {
+    grid[c.y * gridSize + c.x] = 1;
   }
 
   clearLines();
   selectedBlock = null;
+  selectedIndex = -1;
+  clearPreview();
   drawGrid();
+  drawBlocks();
 }
 
 function clearLines() {
